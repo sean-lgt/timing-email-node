@@ -1,0 +1,1 @@
+node E:/nodeJS-study\02-timingSend-daily/daily-email.js
