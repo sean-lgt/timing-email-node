@@ -7,6 +7,10 @@ const nodemailer = require("nodemailer");
 // 引入配置文件
 const { config } = require("./config")
 
+const fs = require("fs")
+const path = require('path')
+const dataFilePath = path.resolve(__dirname, './public/data.json')
+
 // 添加响应拦截器
 axios.interceptors.response.use(function(response) {
   // Any status code that lie within the range of 2xx cause this function to trigger
@@ -54,16 +58,44 @@ const fetchSentence = async () => {
 }
 
 /**
+ * @description: 获取日期数据
+ * @return {*} 返回日期，星期几，总天数
+ */
+const getDateInfo = () => {
+  const today = new Date().toLocaleDateString();
+  const weekday = new Date().toLocaleString("default", { weekday: "long" })
+  const dayCount = parseInt((new Date() - new Date(`${config.TOGETHER_TIME}`)) / 1000 / 60 / 60 / 24)
+
+  return { today, weekday, dayCount }
+}
+
+/**
+ * @description: 写入数据到json文件中
+ * @return {*}
+ * @param {*} data 需要写入的obj数据
+ */
+const writeData = (data) => {
+  try {
+    const oldFileData = fs.readFileSync(dataFilePath, 'UTF-8').toString()
+    const oldData = JSON.parse(oldFileData)
+    oldData.push(data)
+    fs.writeFileSync(dataFilePath, JSON.stringify(oldData))
+  } catch (err) {
+    console.log('🚀【写入数据出现错误】', err);
+  }
+}
+
+
+/**
  * @description: 设置email的内容
  * @return {*}
  * @param {*} bingInfo bing的信息，包含图片及文字描述和链接
  * @param {*} weatherInfo 今天天气信息
  * @param {*} sentence 每日一句土味情话
+ * @param {*} dateInfo 日期数据
  */
-const setEmailContent = (bingInfo, weatherInfo, sentence) => {
-  const today = new Date().toLocaleDateString();
-  const weekday = new Date().toLocaleString("default", { weekday: "long" })
-  const dayCount = parseInt((new Date() - new Date(`${config.TOGETHER_TIME}`)) / 1000 / 60 / 60 / 24)
+const setEmailContent = (bingInfo, weatherInfo, sentence, dateInfo) => {
+
   const content = `
         <style>
         .container {
@@ -106,11 +138,11 @@ const setEmailContent = (bingInfo, weatherInfo, sentence) => {
         }
         </style>
         <div class="container">
-            <div class="title">陪你一起看世界:第${dayCount}期</div>
+            <div class="title">陪你一起看世界:第${dateInfo.dayCount}期</div>
             <a class="description" target="_blank" href="${bingInfo.copyrightlink}">${bingInfo.copyright}</a>
             <div class="content">
                 <p style="display: flex;">
-                    <span>😘今天是：${today}，${weekday}，是我们在一起的第: ${dayCount}天~🥰🎈🎈🎈，今天天气:  ${weatherInfo.type} 最${weatherInfo.high}，最${
+                    <span>😘今天是：${dateInfo.today}，${dateInfo.weekday}，是我们在一起的第: ${dateInfo.dayCount}天~🥰🎈🎈🎈，今天天气:  ${weatherInfo.type} 最${weatherInfo.high}，最${
      weatherInfo.low}，今天的风向是:${weatherInfo.fengxiang}。❤❤❤
                     </span>
                 </p>
@@ -166,8 +198,10 @@ const handleSendEmail = async () => {
     const bingInfo = await fetchBingPictrue()
     const weatherInfo = await fetchWeaterByCity()
     const sentence = await fetchSentence()
-    const emailContent = setEmailContent(bingInfo, weatherInfo, sentence)
+    const dateInfo = getDateInfo()
+    const emailContent = setEmailContent(bingInfo, weatherInfo, sentence, dateInfo)
     sendEmailByNodemailer(emailContent)
+    writeData({ bingInfo, weatherInfo, sentence, dateInfo })
   } catch (error) {
     console.log("发送信息失败")
   }
