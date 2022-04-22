@@ -6,6 +6,7 @@ exports.config = {
   EMALI_SERVICE: '163', //使用163服务 https://nodemailer.com/smtp/well-known/
   EMAIL_ACCOUNT: 'xxxx@163.com', //使用发送邮箱的账号
   EMAIL_PASS: 'xxxyyyxxxyyzxzxz', // 不是邮箱密码，是你设置的smtp授权码
-  TO_EMAIL: '1378485819@qq.com', // 接送者邮箱
+  TO_EMAIL: 'xxxxxxx@qq.com', // 接送者邮箱
   TO_TITLE: '你的专属', //标题
+  OPEN_RECORD: true, //是否开启记录，将数据存至json文件中
 }

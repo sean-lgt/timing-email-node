@@ -202,7 +202,7 @@ const handleSendEmail = async () => {
     const dateInfo = getDateInfo()
     const emailContent = setEmailContent(bingInfo, weatherInfo, sentence, dateInfo)
     sendEmailByNodemailer(emailContent)
-    writeData({ bingInfo, weatherInfo, sentence, dateInfo })
+    config.OPEN_RECORD && writeData({ bingInfo, weatherInfo, sentence, dateInfo })
   } catch (error) {
     console.log("发送信息失败")
   }
