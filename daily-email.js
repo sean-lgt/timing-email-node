@@ -52,9 +52,9 @@ const fetchWeaterByCity = async () => {
 
 // 获取每日一句土味情话
 const fetchSentence = async () => {
-  const sentence = await axios.get(`https://chp.shadiao.app/api.php`);
-  console.log('🚀【获取到每日一句】', sentence);
-  return sentence
+  const sentence = await axios.get(`https://api.shadiao.app/chp`);
+  console.log('🚀【获取到每日一句】', sentence.data.text);
+  return sentence.data.text
 }
 
 /**
@@ -151,6 +151,7 @@ const setEmailContent = (bingInfo, weatherInfo, sentence, dateInfo) => {
             </div>
         </div>
   `;
+
   return content
 }
 
