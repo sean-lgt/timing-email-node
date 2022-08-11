@@ -7,6 +7,9 @@ const nodemailer = require("nodemailer");
 // 引入配置文件
 const { config } = require("./config")
 
+// 引入mysql
+const { sqlQuery } = require('./mysql-query')
+
 const fs = require("fs")
 const path = require('path')
 const dataFilePath = path.resolve(__dirname, './public/data.json')
@@ -193,6 +196,37 @@ const sendEmailByNodemailer = (content) => {
   });
 }
 
+// 导入数据到数据库
+const importDataToDB = async () => {
+  const dataList = require('./public/data.json')
+  let successCount = 0
+  for (let i = 0; i < dataList.length; i++) {
+    let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataList[i].dateInfo.dayCount},'${dataList[i].bingInfo.picUrl}','${dataList[i].bingInfo.copyright}','${dataList[i].bingInfo.copyrightlink}','${dataList[i].weatherInfo.date}','${dataList[i].weatherInfo.type}','${dataList[i].weatherInfo.high}','${dataList[i].weatherInfo.low}','${dataList[i].weatherInfo.fengli}','${dataList[i].weatherInfo.fengxiang}','${dataList[i].sentence}','${dataList[i].dateInfo.today}','${dataList[i].dateInfo.weekday}');`
+    let resultSql = await sqlQuery(insertSql)
+    successCount++;
+  }
+  console.log('🚀【总数据长度】', dataList.length);
+  console.log('🚀【插入成功数据】', successCount);
+}
+
+// 查询数据库数据
+const getAllDataList = async () => {
+  const selectSql = `select * from daily_email;`
+  const resultSql = await sqlQuery(selectSql)
+  console.log('🚀【总数据】', resultSql);
+}
+
+// 新增数据进入数据库
+const insertDataToDB = async (dataJson) => {
+  let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataJson.dateInfo.dayCount},'${dataJson.bingInfo.picUrl}','${dataJson.bingInfo.copyright}','${dataJson.bingInfo.copyrightlink}','${dataJson.weatherInfo.date}','${dataJson.weatherInfo.type}','${dataJson.weatherInfo.high}','${dataJson.weatherInfo.low}','${dataJson.weatherInfo.fengli}','${dataJson.weatherInfo.fengxiang}','${dataJson.sentence}','${dataJson.dateInfo.today}','${dataJson.dateInfo.weekday}');`
+  let resultSql = await sqlQuery(insertSql)
+  if (resultSql && resultSql.affectedRows) {
+    console.log('🚀【数据新增成功】');
+  } else {
+    console.log('😟【新增数据失败】', );
+  }
+}
+
 // 执行发送邮件
 const handleSendEmail = async () => {
   try {
@@ -203,6 +237,7 @@ const handleSendEmail = async () => {
     const emailContent = setEmailContent(bingInfo, weatherInfo, sentence, dateInfo)
     sendEmailByNodemailer(emailContent)
     config.OPEN_RECORD && writeData({ bingInfo, weatherInfo, sentence, dateInfo })
+    config.OPEN_RECORD && insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
   } catch (error) {
     console.log("发送信息失败")
   }

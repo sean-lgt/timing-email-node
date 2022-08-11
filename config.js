@@ -9,4 +9,9 @@ exports.config = {
   TO_EMAIL: 'xxxxxxx@qq.com', // 接送者邮箱
   TO_TITLE: '你的专属', //标题
   OPEN_RECORD: true, //是否开启记录，将数据存至json文件中
+  DB_HOST: 'localhost', //数据库的主机地址
+  DB_PORT: 3306, //数据库端口号
+  DB_USER: 'root', //数据库登录用户
+  DB_PASSWORD: '112233', //数据库登录密码
+  DB_DATABASE: 'timing-send-daily', //选中的数据库
 }
