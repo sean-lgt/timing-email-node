@@ -42,15 +42,19 @@ const fetchBingPictrue = async () => {
 
 // 获取天气信息
 const fetchWeaterByCity = async () => {
+  // 原接口过期，http://wthrcdn.etouch.cn/weather_mini?city=${encodeURI(config.CITY)}
+  // 更换为高德天气API，需要申请 key
+  // 文档：https://lbs.amap.com/api/webservice/guide/api/weatherinfo
   let weather = await axios.get(
-    `http://wthrcdn.etouch.cn/weather_mini?city=${encodeURI(config.CITY)}`,
+    `https://restapi.amap.com/v3/weather/weatherInfo?key=${config.WEATHER_API_KEY}&city=${config.WEATHER_CITY_ADCODE}&extensions=all`,
   );
-  if (weather.data.forecast.length === 0) {
+  if (weather.forecasts.length === 0) {
     console.error("获取今日天气失败")
     return {}
   }
-  console.log('🚀【获取到天气信息】', weather.data.forecast[0]);
-  return weather.data.forecast[0]
+  console.log('🚀【获取到天气信息】', weather.forecasts[0].casts[0]);
+  return weather.forecasts[0].casts[0]
+  // return weather.data.forecast[0]
 }
 
 // 获取每日一句土味情话
@@ -145,8 +149,8 @@ const setEmailContent = (bingInfo, weatherInfo, sentence, dateInfo) => {
             <a class="description" target="_blank" href="${bingInfo.copyrightlink}">${bingInfo.copyright}</a>
             <div class="content">
                 <p style="display: flex;">
-                    <span>😘今天是：${dateInfo.today}，${dateInfo.weekday}，是我们在一起的第: ${dateInfo.dayCount}天~🥰🎈🎈🎈，今天天气:  ${weatherInfo.type} 最${weatherInfo.high}，最${
-     weatherInfo.low}，今天的风向是:${weatherInfo.fengxiang}。❤❤❤
+                    <span>😘今天是：${dateInfo.today}，${dateInfo.weekday}，是我们在一起的第: ${dateInfo.dayCount}天~🥰🎈🎈🎈，今天天气:  ${weatherInfo.dayweather},最高${weatherInfo.daytemp}°C，最低${
+     weatherInfo.nighttemp}°C，今天吹${weatherInfo.daywind}风，风力${weatherInfo.daypower}级。❤❤❤
                     </span>
                 </p>
                 <p></p>
@@ -154,7 +158,6 @@ const setEmailContent = (bingInfo, weatherInfo, sentence, dateInfo) => {
             </div>
         </div>
   `;
-
   return content
 }
 
@@ -218,7 +221,7 @@ const getAllDataList = async () => {
 
 // 新增数据进入数据库
 const insertDataToDB = async (dataJson) => {
-  let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataJson.dateInfo.dayCount},'${dataJson.bingInfo.picUrl}','${dataJson.bingInfo.copyright}','${dataJson.bingInfo.copyrightlink}','${dataJson.weatherInfo.date}','${dataJson.weatherInfo.type}','${dataJson.weatherInfo.high}','${dataJson.weatherInfo.low}','${dataJson.weatherInfo.fengli}','${dataJson.weatherInfo.fengxiang}','${dataJson.sentence}','${dataJson.dateInfo.today}','${dataJson.dateInfo.weekday}');`
+  let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataJson.dateInfo.dayCount},'${dataJson.bingInfo.picUrl}','${dataJson.bingInfo.copyright}','${dataJson.bingInfo.copyrightlink}','${dataJson.weatherInfo.date}','${dataJson.weatherInfo.dayweather}','${dataJson.weatherInfo.daytemp}','${dataJson.weatherInfo.nighttemp}','${dataJson.weatherInfo.daypower}','${dataJson.weatherInfo.daywind}风','${dataJson.sentence}','${dataJson.dateInfo.today}','${dataJson.dateInfo.weekday}');`
   let resultSql = await sqlQuery(insertSql)
   if (resultSql && resultSql.affectedRows) {
     console.log('🚀【数据新增成功】');
@@ -239,7 +242,7 @@ const handleSendEmail = async () => {
     config.OPEN_RECORD && writeData({ bingInfo, weatherInfo, sentence, dateInfo })
     config.OPEN_RECORD && insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
   } catch (error) {
-    console.log("发送信息失败")
+    console.log("发送信息失败", error)
   }
 }
 
