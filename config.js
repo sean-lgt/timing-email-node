@@ -14,6 +14,7 @@ exports.config = {
   DB_USER: 'root', //数据库登录用户
   DB_PASSWORD: '112233', //数据库登录密码
   DB_DATABASE: 'timing-send-daily', //选中的数据库
-  WEATHER_API_KEY: '0546caaaaaaaabbbcccbbccbbcc', //高德web服务API的key
+  WEATHER_API_KEY: '0546c98c9d4f5b97653009edb3e6e64d', //高德web服务API的key
   WEATHER_CITY_ADCODE: '440300', //城市的adcode,参考高德城市编码表
+
 }
