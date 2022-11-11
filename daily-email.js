@@ -162,6 +162,24 @@ const setEmailContent = (bingInfo, weatherInfo, sentence, dateInfo) => {
 }
 
 /**
+ * @description: 当程序出现错误时，组织错误信息发送邮件
+ * @return {*}
+ * @param {*} errorInfo
+ */
+const setErrorEmailContent = (errorInfo) => {
+  const content = `
+  <div class="container">
+      <div class="content">
+          <p style="display: flex;">
+              每日邮件出现错误了：${errorInfo}
+          </p>
+      </div>
+  </div>
+`;
+  return content
+}
+
+/**
  * @description: 通过Nodemailer发送电子邮件
  * @return {*}
  * @param {*} content 邮件内容
@@ -183,6 +201,42 @@ const sendEmailByNodemailer = (content) => {
     subject: `想和你一起看世界:第${parseInt(
         (new Date() - new Date(config.TOGETHER_TIME)) / 1000 / 60 / 60 / 24,
       )}期`, // 邮件标题
+    // 发送text或者html格式
+    // text: 'Hello world?', // plain text body
+    // 发送的html内容
+    html: content,
+  };
+
+  // send mail with defined transport object
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return console.log("error", error);
+    }
+    console.log("Message sent: %s", info.messageId);
+    console.log(info);
+  });
+}
+
+/**
+ * @description: 通过Nodemailer发送【失败】电子邮件
+ * @return {*}
+ * @param {*} content 邮件内容
+ */
+const sendErrorEmailByNodemailer = (content) => {
+  const transporter = nodemailer.createTransport({
+    service: config.EMALI_SERVICE, // 使用了内置传输发送邮件 查看支持列表：https://nodemailer.com/smtp/well-known/
+    port: 465, // SMTP 端口
+    secureConnection: true, // 使用了 SSL
+    auth: {
+      user: config.EMAIL_ACCOUNT, //邮箱账号
+      pass: config.EMAIL_PASS, // 不是邮箱密码，是你设置的smtp授权码
+    },
+  });
+
+  let mailOptions = {
+    from: `"【错误警告】${config.EMAIL_NAME}" <${config.EMAIL_ACCOUNT}>`, // 发送者 邮件地址
+    to: `"${config.TO_TITLE}【错误警告】" <${config.RECEVICE_ERROR_EMAIL}>`, // 逗号隔开的接收人列表
+    subject: `【错误警告】想和你一起看世界`, // 邮件标题
     // 发送text或者html格式
     // text: 'Hello world?', // plain text body
     // 发送的html内容
@@ -243,6 +297,8 @@ const handleSendEmail = async () => {
     config.OPEN_RECORD && insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
   } catch (error) {
     console.log("发送信息失败", error)
+    const errrContent = setErrorEmailContent(error || '')
+    sendErrorEmailByNodemailer(errrContent)
   }
 }
 
