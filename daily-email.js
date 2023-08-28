@@ -285,6 +285,7 @@ const insertDataToDB = async (dataJson) => {
 }
 
 // 执行发送邮件
+let errorCount = 0
 const handleSendEmail = async () => {
   try {
     const bingInfo = await fetchBingPictrue()
@@ -295,10 +296,21 @@ const handleSendEmail = async () => {
     sendEmailByNodemailer(emailContent)
     config.OPEN_RECORD && writeData({ bingInfo, weatherInfo, sentence, dateInfo })
     config.OPEN_RECORD && insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
+
+    errorCount = 0
   } catch (error) {
     console.log("发送信息失败", error)
-    const errrContent = setErrorEmailContent(error || '')
-    sendErrorEmailByNodemailer(errrContent)
+    errorCount += 1
+    if(errorCount > 4){
+      // 超过次数 发送错误邮箱
+      const errrContent = setErrorEmailContent(error || '')
+      sendErrorEmailByNodemailer(errrContent)
+    }else{
+      setTimeout(() => {
+        console.log('重新发起请求')
+        handleSendEmail()
+      }, 10 * 1000);
+    }
   }
 }
 
