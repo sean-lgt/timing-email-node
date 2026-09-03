@@ -3,7 +3,7 @@ name: Daily Email Automation
 on:
   schedule:
     # UTC 时间 23:00 执行，对应北京时间次日 07:00
-    - cron: '20 12 * * *'
+    - cron: '45 12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,11 +16,34 @@ jobs:
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Dependencies
         run: npm ci
+
+      - name: Check required secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        run: |
+          missing=""
+          [ -z "$SUPABASE_URL" ] && missing="$missing SUPABASE_URL"
+          [ -z "$SUPABASE_KEY" ] && missing="$missing SUPABASE_KEY"
+          [ -z "$SMTP_USER" ] && missing="$missing SMTP_USER"
+          [ -z "$SMTP_PASS" ] && missing="$missing SMTP_PASS"
+          [ -z "$TO_EMAIL" ] && missing="$missing TO_EMAIL"
+          [ -z "$WEATHER_API_KEY" ] && missing="$missing WEATHER_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "缺少 GitHub Secrets:$missing"
+            echo "请到 Settings → Secrets and variables → Actions 添加同名 Repository secrets"
+            exit 1
+          fi
+          echo "必要 Secrets 已配置"
 
       - name: Run Script
         env:
@@ -37,4 +60,5 @@ jobs:
           WEATHER_CITY_ADCODE: ${{ secrets.WEATHER_CITY_ADCODE }}
           TOGETHER_TIME: ${{ secrets.TOGETHER_TIME }}
           CITY: ${{ secrets.CITY }}
+          OPEN_RECORD: ${{ secrets.OPEN_RECORD }}
         run: npm start
