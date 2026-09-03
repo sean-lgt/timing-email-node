@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/cron.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "10 14 * * *"
+    }
+  ]
+}
