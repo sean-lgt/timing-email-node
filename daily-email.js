@@ -26,9 +26,9 @@ axios.interceptors.response.use(function(response) {
   return Promise.reject(error);
 });
 
-// 获取bing的壁纸
+// 获取bing的壁纸（固定中文市场，避免 GitHub Actions 英文环境返回英文版权）
 const fetchBingPictrue = async () => {
-  const BPicList = await axios.get("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1")
+  const BPicList = await axios.get("https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN")
   let bingInfo = {}
   if (!BPicList.images[0]) {
     console.error("获取bing壁纸失败")
@@ -66,13 +66,14 @@ const fetchSentence = async () => {
 }
 
 /**
- * @description: 获取日期数据
+ * @description: 获取日期数据（固定中文 + 北京时区，避免 CI 英文环境）
  * @return {*} 返回日期，星期几，总天数
  */
 const getDateInfo = () => {
-  const today = new Date().toLocaleDateString();
-  const weekday = new Date().toLocaleString("default", { weekday: "long" })
-  const dayCount = parseInt((new Date() - new Date(`${config.TOGETHER_TIME}`)) / 1000 / 60 / 60 / 24)
+  const now = new Date()
+  const today = now.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' })
+  const weekday = now.toLocaleString('zh-CN', { weekday: 'long', timeZone: 'Asia/Shanghai' })
+  const dayCount = parseInt((now - new Date(`${config.TOGETHER_TIME}`)) / 1000 / 60 / 60 / 24)
 
   return { today, weekday, dayCount }
 }
