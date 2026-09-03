@@ -1,0 +1,40 @@
+name: Daily Email Automation
+
+on:
+  schedule:
+    # UTC 时间 23:00 执行，对应北京时间次日 07:00
+    - cron: '20 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-daily-task:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_SERVICE: ${{ secrets.EMAIL_SERVICE }}
+          EMAIL_NAME: ${{ secrets.EMAIL_NAME }}
+          TO_EMAIL: ${{ secrets.TO_EMAIL }}
+          TO_TITLE: ${{ secrets.TO_TITLE }}
+          RECEVICE_ERROR_EMAIL: ${{ secrets.RECEVICE_ERROR_EMAIL }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+          WEATHER_CITY_ADCODE: ${{ secrets.WEATHER_CITY_ADCODE }}
+          TOGETHER_TIME: ${{ secrets.TOGETHER_TIME }}
+          CITY: ${{ secrets.CITY }}
+        run: npm start

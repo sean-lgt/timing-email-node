@@ -7,12 +7,13 @@ const nodemailer = require("nodemailer");
 // 引入配置文件
 const { config } = require("./config")
 
-// 引入mysql
-const { sqlQuery } = require('./mysql-query')
+// 引入 Supabase 客户端
+const { supabase } = require('./lib/supabase')
 
 const fs = require("fs")
 const path = require('path')
 const dataFilePath = path.resolve(__dirname, './public/data.json')
+const TABLE_NAME = config.TABLE_NAME
 
 // 添加响应拦截器
 axios.interceptors.response.use(function(response) {
@@ -253,35 +254,88 @@ const sendErrorEmailByNodemailer = (content) => {
   });
 }
 
-// 导入数据到数据库
-const importDataToDB = async () => {
-  const dataList = require('./public/data.json')
-  let successCount = 0
-  for (let i = 0; i < dataList.length; i++) {
-    let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataList[i].dateInfo.dayCount},'${dataList[i].bingInfo.picUrl}','${dataList[i].bingInfo.copyright}','${dataList[i].bingInfo.copyrightlink}','${dataList[i].weatherInfo.date}','${dataList[i].weatherInfo.type}','${dataList[i].weatherInfo.high}','${dataList[i].weatherInfo.low}','${dataList[i].weatherInfo.fengli}','${dataList[i].weatherInfo.fengxiang}','${dataList[i].sentence}','${dataList[i].dateInfo.today}','${dataList[i].dateInfo.weekday}');`
-    let resultSql = await sqlQuery(insertSql)
-    successCount++;
+/**
+ * @description: 将业务数据映射为表字段
+ */
+const mapRecordToRow = (dataJson) => {
+  const weather = dataJson.weatherInfo || {}
+  return {
+    day_count: dataJson.dateInfo.dayCount,
+    bing_picture_url: dataJson.bingInfo.picUrl,
+    bing_copyright: dataJson.bingInfo.copyright,
+    bing_copyrighy_link: dataJson.bingInfo.copyrightlink,
+    weather_date: weather.date || weather.weather_date || '',
+    weather_type: weather.dayweather || weather.type || '',
+    weather_high: weather.daytemp || weather.high || '',
+    weather_low: weather.nighttemp || weather.low || '',
+    weather_fengli: weather.daypower || weather.fengli || '',
+    weather_fengxiang: weather.daywind
+      ? `${weather.daywind}风`
+      : (weather.fengxiang || ''),
+    sentence: dataJson.sentence,
+    date_today: dataJson.dateInfo.today,
+    date_weekday: dataJson.dateInfo.weekday,
   }
-  console.log('🚀【总数据长度】', dataList.length);
-  console.log('🚀【插入成功数据】', successCount);
 }
 
-// 查询数据库数据
+// 导入历史 JSON 数据到 Supabase（手动调用）
+const importDataToDB = async () => {
+  const dataList = require('./public/data.json')
+  const rows = dataList.map(mapRecordToRow)
+  const { data, error } = await supabase.from(TABLE_NAME).insert(rows).select()
+  if (error) {
+    console.log('😟【批量导入失败】', error);
+    throw error
+  }
+  console.log('🚀【总数据长度】', dataList.length);
+  console.log('🚀【插入成功数据】', data?.length || 0);
+}
+
+// 查询最新一条数据
+const getLatestData = async () => {
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(1)
+
+  if (error) {
+    console.log('😟【查询最新数据失败】', error);
+    throw error
+  }
+  console.log('🚀【最新数据】', data);
+  return data
+}
+
+// 查询全部数据
 const getAllDataList = async () => {
-  const selectSql = `select * from daily_email;`
-  const resultSql = await sqlQuery(selectSql)
-  console.log('🚀【总数据】', resultSql);
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .select('*')
+    .order('id', { ascending: true })
+
+  if (error) {
+    console.log('😟【查询全部数据失败】', error);
+    throw error
+  }
+  console.log('🚀【总数据】', data);
+  return data
 }
 
 // 新增数据进入数据库
 const insertDataToDB = async (dataJson) => {
-  let insertSql = `insert into daily_email(day_count,bing_picture_url,bing_copyright,bing_copyrighy_link,weather_date,weather_type,weather_high,weather_low,weather_fengli,weather_fengxiang,sentence,date_today,date_weekday) values(${dataJson.dateInfo.dayCount},'${dataJson.bingInfo.picUrl}','${dataJson.bingInfo.copyright}','${dataJson.bingInfo.copyrightlink}','${dataJson.weatherInfo.date}','${dataJson.weatherInfo.dayweather}','${dataJson.weatherInfo.daytemp}','${dataJson.weatherInfo.nighttemp}','${dataJson.weatherInfo.daypower}','${dataJson.weatherInfo.daywind}风','${dataJson.sentence}','${dataJson.dateInfo.today}','${dataJson.dateInfo.weekday}');`
-  let resultSql = await sqlQuery(insertSql)
-  if (resultSql && resultSql.affectedRows) {
-    console.log('🚀【数据新增成功】');
-  } else {
-    console.log('😟【新增数据失败】', );
+  const row = mapRecordToRow(dataJson)
+  const { data, error } = await supabase
+    .from(TABLE_NAME)
+    .insert([row])
+    .select()
+
+  if (error) {
+    console.log('😟【新增数据失败】', error);
+    throw error
   }
+  console.log('🚀【数据新增成功】', data);
+  return data
 }
 
 // 执行发送邮件
@@ -295,7 +349,9 @@ const handleSendEmail = async () => {
     const emailContent = setEmailContent(bingInfo, weatherInfo, sentence, dateInfo)
     sendEmailByNodemailer(emailContent)
     config.OPEN_RECORD && writeData({ bingInfo, weatherInfo, sentence, dateInfo })
-    config.OPEN_RECORD && insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
+    if (config.OPEN_RECORD) {
+      await insertDataToDB({ bingInfo, weatherInfo, sentence, dateInfo })
+    }
 
     errorCount = 0
   } catch (error) {
