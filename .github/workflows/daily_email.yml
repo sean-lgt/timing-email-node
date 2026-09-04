@@ -1,9 +1,8 @@
 name: Daily Email Automation
 
+# 定时任务已迁移至 Vercel Cron，关闭 GitHub Actions 自动调度。
+# 如需手动调试，可在 Actions 页面点击 “Run workflow”。
 on:
-  schedule:
-    # UTC 时间 23:00 执行，对应北京时间次日 07:00
-    - cron: '45 12 * * *'
   workflow_dispatch:
 
 jobs:
