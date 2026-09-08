@@ -2,7 +2,7 @@
   "name": "timingsend-daily",
   "version": "1.0.0",
   "description": "",
-  "main": "daily-email.js",
+  "main": "api/cron.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node -r dotenv/config daily-email.js"
