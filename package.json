@@ -1,14 +1,17 @@
 {
   "name": "timingsend-daily",
   "version": "1.0.0",
-  "description": "",
-  "main": "lib/daily-task.js",
+  "description": "Daily email via Vercel Cron",
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node -r dotenv/config daily-email.js"
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",
     "axios": "^0.26.0",

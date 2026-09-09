@@ -1,8 +1,10 @@
 {
   "version": 2,
+  "framework": null,
   "functions": {
     "api/cron.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "memory": 1024
     }
   },
   "crons": [
